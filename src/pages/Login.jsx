@@ -89,14 +89,6 @@ export default function Login() {
         <p className="text-center mt-3">
           Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
         </p>
-
-        <hr />
-
-        <div className="small text-muted">
-          <b>Admin demo:</b> admin@gmail.com / 123456
-          <br />
-          (Khách hàng đăng ký ở trang Đăng ký)
-        </div>
       </div>
     </div>
   );

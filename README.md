@@ -38,7 +38,7 @@ Truy cập http://localhost:5173 (hoặc đường dẫn Vite hiển thị).
 | --- | --- | --- |
 | Quản trị viên | admin@gmail.com | 123456 |
 
-Khách hàng tự đăng ký ở trang /register.
+Khách hàng tự đăng ký ở trang /register. Tài khoản quản trị được kiểm tra trực tiếp trong `src/pages/Login.jsx`.
 
 ## 4. Chức năng
 
