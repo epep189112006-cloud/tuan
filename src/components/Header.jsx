@@ -21,7 +21,7 @@ export default function Header() {
       .catch(() => setCategories([]));
   }, []);
 
-  // useRef: nhảy con trỏ vào ô tìm kiếm khi nhấn phím "/"
+
   useEffect(() => {
     const xuLyPhim = (e) => {
       const dangGoi = document.activeElement && document.activeElement.tagName;
