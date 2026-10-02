@@ -30,10 +30,31 @@ const banners = [
 export default function Home() {
   const [books, setBooks] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [dangTai, setDangTai] = useState(true);
+  const [loi, setLoi] = useState("");
 
   useEffect(() => {
-    getBooks().then((res) => setBooks(res.data));
-    getCategories().then((res) => setCategories(res.data));
+    let huy = false;
+    setDangTai(true);
+    setLoi("");
+
+    Promise.all([getBooks(), getCategories()])
+      .then(([resBooks, resCats]) => {
+        if (huy) return;
+        setBooks(resBooks.data);
+        setCategories(resCats.data);
+      })
+      .catch(() => {
+        if (huy) return;
+        setLoi("Không tải được dữ liệu. Hãy kiểm tra JSON Server đã chạy chưa (npm run server).");
+      })
+      .finally(() => {
+        if (!huy) setDangTai(false);
+      });
+
+    return () => {
+      huy = true;
+    };
   }, []);
 
   const bestSellers = [...books]
@@ -48,6 +69,29 @@ export default function Home() {
 
   return (
     <>
+      {/* ===== Trạng thái tải dữ liệu ===== */}
+      {dangTai && (
+        <div className="container py-5 text-center">
+          <div className="spinner-border text-danger" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+          <p className="text-muted mt-3">Đang tải sách...</p>
+        </div>
+      )}
+
+      {!dangTai && loi && (
+        <div className="container py-5">
+          <div className="alert alert-danger text-center">
+            {loi}
+            <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => window.location.reload()}>
+              Thử lại
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!dangTai && !loi && (
+      <>
       {/* ===== Banner Slider ===== */}
       <div id="mainSlider" className="carousel slide carousel-fade" data-bs-ride="carousel">
         <div className="carousel-indicators">
@@ -167,6 +211,8 @@ export default function Home() {
         {/* ===== Gợi ý cho bạn ===== */}
         <Recommend books={books} categories={categories} />
       </div>
+      </>
+      )}
     </>
   );
 }

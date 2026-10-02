@@ -457,6 +457,32 @@ a {
   color: #d70018;
 }
 
+/* ================= NOT FOUND 404 ================= */
+.not-found {
+  max-width: 640px;
+}
+
+.not-found-code {
+  font-size: 6rem;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(90deg, #d70018, #ff6a00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.not-found-title {
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.not-found-cats {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px dashed #e3e3e3;
+}
+
 /* ================= PURCHASE BOX ================= */
 .purchase-box {
   background: #fff;

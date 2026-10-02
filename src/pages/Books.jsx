@@ -18,13 +18,32 @@ export default function Books() {
   const [publisher, setPublisher] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [page, setPage] = useState(1);
+  const [dangTai, setDangTai] = useState(true);
+  const [loi, setLoi] = useState("");
 
   useEffect(() => {
-    getBooks().then((res) => {
-      setBooks(res.data);
-    });
-    getCategories().then((res) => setCategories(res.data));
-    getAuthors().then((res) => setAuthors(res.data));
+    let huy = false;
+    setDangTai(true);
+    setLoi("");
+
+    Promise.all([getBooks(), getCategories(), getAuthors()])
+      .then(([resBooks, resCats, resAuthors]) => {
+        if (huy) return;
+        setBooks(resBooks.data);
+        setCategories(resCats.data);
+        setAuthors(resAuthors.data);
+      })
+      .catch(() => {
+        if (huy) return;
+        setLoi("Không tải được danh sách sách. Hãy kiểm tra JSON Server đã chạy chưa (npm run server).");
+      })
+      .finally(() => {
+        if (!huy) setDangTai(false);
+      });
+
+    return () => {
+      huy = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -73,6 +92,26 @@ export default function Books() {
 
   return (
     <div className="container py-5">
+      {dangTai && (
+        <div className="text-center my-5">
+          <div className="spinner-border text-danger" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+          <p className="text-muted mt-3">Đang tải danh sách sách...</p>
+        </div>
+      )}
+
+      {!dangTai && loi && (
+        <div className="alert alert-danger text-center">
+          {loi}
+          <button className="btn btn-sm btn-outline-danger ms-2" onClick={() => window.location.reload()}>
+            Thử lại
+          </button>
+        </div>
+      )}
+
+      {!dangTai && !loi && (
+      <>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Danh mục sách</h1>
         <span className="text-muted">{result.length} kết quả</span>
@@ -170,6 +209,8 @@ export default function Books() {
       )}
 
       <Pagination page={currentPage} totalPages={totalPages} onPageChange={setPage} />
+      </>
+      )}
     </div>
   );
 }

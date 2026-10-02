@@ -17,6 +17,7 @@ import ManageAuthors from "./admin/Authors";
 import ManageInventory from "./admin/Inventory";
 import ManageOrders from "./admin/Orders";
 import ManagePromotions from "./admin/Promotions";
+import NotFound from "./pages/NotFound";
 
 export default function App() {
   return (
@@ -41,6 +42,9 @@ export default function App() {
           <Route path="/admin/inventory" element={<ManageInventory />} />
           <Route path="/admin/orders" element={<ManageOrders />} />
           <Route path="/admin/promotions" element={<ManagePromotions />} />
+
+          {/* Route động bắt mọi đường dẫn còn lại -> trang 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

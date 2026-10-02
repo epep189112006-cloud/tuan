@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaSearch, FaHeart, FaShoppingCart, FaUser, FaPhoneAlt, FaBook } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
@@ -13,14 +13,31 @@ export default function Header() {
 
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
+  const oTimKiemRef = useRef(null);
 
   useEffect(() => {
-    getCategories().then((res) => setCategories(res.data));
+    getCategories()
+      .then((res) => setCategories(res.data))
+      .catch(() => setCategories([]));
+  }, []);
+
+  // useRef: nhảy con trỏ vào ô tìm kiếm khi nhấn phím "/"
+  useEffect(() => {
+    const xuLyPhim = (e) => {
+      const dangGoi = document.activeElement && document.activeElement.tagName;
+      if (e.key === "/" && dangGoi !== "INPUT" && dangGoi !== "TEXTAREA") {
+        e.preventDefault();
+        oTimKiemRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", xuLyPhim);
+    return () => window.removeEventListener("keydown", xuLyPhim);
   }, []);
 
   const timKiem = (e) => {
     e.preventDefault();
     navigate(tuKhoa.trim() ? `/books?keyword=${encodeURIComponent(tuKhoa.trim())}` : "/books");
+    setTuKhoa("");
   };
 
   return (
@@ -64,6 +81,7 @@ export default function Header() {
               placeholder="Tìm kiếm sách theo tên, tác giả..."
               value={tuKhoa}
               onChange={(e) => setTuKhoa(e.target.value)}
+              ref={oTimKiemRef}
             />
             <button type="submit">
               <FaSearch />

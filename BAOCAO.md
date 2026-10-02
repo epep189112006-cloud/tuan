@@ -12,10 +12,12 @@
 Xây dựng website bán sách online với đầy đủ các chức năng của một nhà sách:
 duyệt sách theo thể loại, tác giả, nhà xuất bản; xem chi tiết và đánh giá sách;
 thêm vào giỏ hàng và đặt mua; quản trị viên quản lý kho sách, khuyến mại và đơn
-hàng.
+hàng. Trang chủ có module **Flash Sale** kèm đồng hồ đếm ngược và module
+**Gợi ý cho bạn** tự động đề xuất sách dựa trên lịch sử xem của từng người dùng
+lưu trên trình duyệt.
 
 **Tác nhân chính:**
-- **Khách:** xem sách, tìm kiếm, lọc theo giá.
+- **Khách:** xem sách, tìm kiếm, lọc theo giá, xem Flash Sale và nhận gợi ý sách phù hợp.
 - **Khách hàng:** đăng ký, đăng nhập, mua hàng, đánh giá sau khi mua, wishlist.
 - **Quản trị viên:** CRUD sách - thể loại - tác giả, quản lý tồn kho, đơn hàng, khuyến mại, thống kê.
 
@@ -60,9 +62,9 @@ hàng.
 ```
 src/
 |-- admin/       (trang quản trị)
-|-- components/  (component dùng lại: BookCard, Rating, Pagination, Header, Footer)
-|-- contexts/    (Context API: CartContext, WishlistContext)
-|-- pages/       (trang người dùng: Home, Books, BookDetail, Cart...)
+|-- components/  (component dùng lại: BookCard, Rating, Pagination, Header, Footer, FlashSale, Recommend)
+|-- contexts/    (Context API: CartContext, WishlistContext, RecentlyViewedContext)
+|-- pages/       (trang người dùng: Home, Books, BookDetail, Cart, Checkout, NotFound...)
 |-- services/    (api.js gọi API bằng axios)
 |-- App.jsx      (định nghĩa các route)
 |-- main.jsx     (khởi tạo ứng dụng, bọc Provider + BrowserRouter)
@@ -148,7 +150,9 @@ src/
   <BrowserRouter>
     <CartProvider>
       <WishlistProvider>
-        <App />
+        <RecentlyViewedProvider>
+          <App />
+        </RecentlyViewedProvider>
       </WishlistProvider>
     </CartProvider>
   </BrowserRouter>
@@ -163,19 +167,91 @@ src/
     <Route path="/checkout" element={<Checkout />} />
     ...
     <Route path="/admin" element={<Dashboard />} />
+    <Route path="*" element={<NotFound />} />
   </Routes>
   ```
 - Dùng `useParams()` để lấy id trong `BookDetail.jsx`, `useNavigate()` để chuyển trang sau khi đặt hàng trong `Checkout.jsx`.
+- **Route động:** `/books/:id` — `:id` là tham số động, đọc bằng `useParams()`. Nhờ vậy 1 khuôn mẫu phục vụ được cho mọi cuốn sách thay vì phải tạo route riêng cho từng cuốn.
+- **Trang 404:** route `<Route path="*" element={<NotFound />} />` đặt cuối cùng, bắt mọi đường dẫn không khớp route nào và hiển thị trang thông báo "Không tìm thấy trang" kèm nút quay về trang chủ. Nếu thiếu route `*`, người dùng gõ sai địa chỉ sẽ thấy trang trắng trơn.
+
+### 2.8. useRef - thao tác trực tiếp lên phần tử DOM
+
+**Lý thuyết:**
+- `useRef` tạo một "hộp" giữ giá trị qua các lần render mà không làm component render lại.
+- Gắn `ref` vào phần tử DOM thì `ref.current` chính là node DOM thật, từ đó gọi được các phương thức của DOM như `focus()`, `scrollIntoView()`, giá trị `.value`.
+- `useRef` khác `useState`: đổi `useRef.current` **không** kích hoạt render, phù hợp với thao tác tạm thời, không phù hợp dữ liệu cần hiển thị.
+
+**Áp dụng vào đồ án:**
+- `src/components/Header.jsx`: dùng `useRef` để lưu ô tìm kiếm và nhảy con trỏ vào ô khi nhấn phím `/`:
+  ```jsx
+  const oTimKiemRef = useRef(null);
+  ...
+  if (e.key === "/") {
+    e.preventDefault();
+    oTimKiemRef.current?.focus();
+  }
+  ...
+  <input ref={oTimKiemRef} />
+  ```
+- `src/pages/BookDetail.jsx`: dùng `useRef` để tự động cuộn lên đầu trang mỗi khi xem cuốn sách khác, tránh phải cuộn tay:
+  ```jsx
+  const dauTrangRef = useRef(null);
+  useEffect(() => {
+    dauTrangRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [id]);
+  ```
+- Vì sao không dùng `useState`? Vì `focus()` và `scrollIntoView()` là hành động một lần, giá trị đó không cần render lại. Dùng `useState` sẽ dư render vô ích.
+
+### 2.9. Xử lý trạng thái tải và lỗi
+
+**Áp dụng vào đồ án:**
+- Các trang gọi API dùng 3 trạng thái: `dangTai` (đang tải), `loi` (lỗi), và dữ liệu đã tải xong.
+- Gộp nhiều API bằng `Promise.all` để chờ cùng lúc, `.catch()` bắt lỗi và `.finally()` tắt trạng thái đang tải.
+- Cờ `huy` trong `useEffect` chống việc set state sau khi component đã unmount:
+  ```jsx
+  useEffect(() => {
+    let huy = false;
+    Promise.all([getBooks(), getCategories()])
+      .then(([resBooks, resCats]) => {
+        if (huy) return;
+        setBooks(resBooks.data);
+        setCategories(resCats.data);
+      })
+      .catch(() => { if (!huy) setLoi("Không tải được dữ liệu..."); })
+      .finally(() => { if (!huy) setDangTai(false); });
+    return () => { huy = true; };
+  }, []);
+  ```
+- Khi đang tải hiện Bootstrap spinner, khi lỗi hiện thông báo kèm nút "Thử lại" thay vì để trang trống im lặng.
 
 ---
 
 ## 3. Điểm nhấn kỹ thuật React
 
-- **Context API** cho giỏ hàng (`CartContext`) và danh sách yêu thích (`WishlistContext`), dữ liệu lưu thêm vào localStorage để giữ khi tải lại trang.
+### 3.1. Kiến trúc và tổ chức code
+
+- **Context API** cho giỏ hàng (`CartContext`), danh sách yêu thích (`WishlistContext`) và lịch sử xem sách (`RecentlyViewedContext`), dữ liệu lưu thêm vào localStorage để giữ khi tải lại trang. Cả 3 viết theo cùng một khuôn mẫu: khởi tạo state bằng cách đọc localStorage, `useEffect` ghi ngược xuống mỗi khi state đổi.
 - **Component đánh giá sao tái sử dụng** (`src/components/Rating.jsx`) dùng lại ở thẻ sách, trang chi tiết, phần nhận xét.
 - **Phân trang** (`src/components/Pagination.jsx`) ở trang danh mục sách.
-- **Giao diện responsive** bằng Bootstrap 5.
-- Component dùng lại `BookCard` được dùng ở trang chủ, danh mục, wishlist và "sách cùng tác giả".
+- Component dùng lại `BookCard` được dùng ở trang chủ, danh mục, wishlist và "sách cùng tác giả". Component này chỉ nhận **một prop duy nhất** là `book`, còn hàm `addToCart` và `toggleWishlist` tự lấy từ Context qua `useCart()` và `useWishlist()` - nhờ đó tránh được việc phải truyền props qua nhiều tầng (*prop drilling*).
+- **Giao diện responsive** bằng Bootstrap 5: dùng `row-cols-2 row-cols-md-4 row-cols-xl-5` để lưới tự đổi số cột theo kích thước màn hình, kết hợp class `h-100` (các thẻ cao bằng nhau) và `mt-auto` (đẩy nút bấm xuống đáy thẻ).
+
+### 3.2. Các module nổi bật
+
+- **Flash Sale** (`src/components/FlashSale.jsx`): mô phỏng kiểu bố cục của các nhà sách lớn - thanh tiêu đề gradient đỏ, đồng hồ đếm ngược và thẻ sách có nhãn phần trăm giảm. Đồng hồ được lưu dưới dạng **tổng số giây** (`useState`), `setInterval` trừ đi 1 mỗi giây, sau đó chia ra giờ/phút/giây bằng phép chia lấy phần nguyên và phần dư (`%`); hàm trả về của `useEffect` gọi `clearInterval` để dọn bộ đếm khi rời trang. Giá suy ra bằng công thức `giá gốc × (1 - 30/100)`.
+- **Gợi ý cho bạn** (`src/components/Recommend.jsx`): lưu 12 cuốn sách gần nhất người dùng đã xem vào localStorage, sau đó **chấm điểm** từng cuốn sách còn lại để xếp hạng: cùng tác giả +100 điểm, cùng thể loại +40 điểm, cộng thêm theo rating và số lượng đã bán; loại bỏ những cuốn đã xem và lấy 10 cuốn điểm cao nhất. Nếu người dùng chưa xem cuốn nào thì rơi về danh sách sách rating cao và bán chạy. Khi không có cuốn nào để gợi ý thì component trả về `null` để ẩn hẳn khối thay vì hiển thị khung rỗng.
+- **Trang 404** (`src/pages/NotFound.jsx`): hiển thị mã 404, nút quay về trang chủ và gợi ý các thể loại sách để người dùng không bị kẹt ở trang trống.
+- **Tìm kiếm bằng phím tắt**: nhấn phím `/` ở bất kỳ đâu trong trang sẽ nhảy con trỏ vào ô tìm kiếm (dùng `useRef`).
+
+### 3.3. Xử lý trạng thái và lỗi
+
+- Biểu mẫu có kiểm tra dữ liệu: đăng ký kiểm tra mật khẩu xác nhận có khớp không, mật khẩu tối thiểu 6 ký tự và email đã tồn tại chưa; đăng nhập báo lỗi sai tài khoản; các biểu mẫu quản trị và thanh toán dùng thuộc tính `required` và `type="email"` của HTML5.
+- Các trang gọi API đều có trạng thái đang tải (spinner), trạng thái lỗi kèm nút thử lại, và dùng `Promise.all` để gộp nhiều lời gọi.
+
+### 3.4. Sửa lỗi đáng chú ý
+
+- **Lỗi bộ lọc không đổi khi bấm danh mục khác.** Bản đầu đọc tham số URL bằng `window.location.search` trong một `useEffect` có mảng phụ thuộc rỗng `[]`, nên chỉ chạy một lần lúc vào trang. Khi người dùng đang ở trang `/books` rồi bấm sang thể loại khác, React không tạo lại component (vẫn là route `/books`), component không được mount lại nên `useEffect` không chạy lại và bộ lọc giữ nguyên giá trị cũ. Cách sửa là dùng `useSearchParams()` của React Router để đọc thẳng từ URL và ghi lại bộ lọc qua `setSearchParams`. Cách làm này còn giúp F5 lại vẫn giữ đúng bộ lọc và cho phép sao chép link chia sẻ.
+- **Trang trắng khi lọc còn ít kết quả:** dùng `Math.min(page, totalPages)` để trang hiện tại không vượt quá tổng số trang, kèm `useEffect` reset về trang 1 mỗi khi bộ lọc thay đổi.
 
 ## 4. Cách chạy chương trình
 

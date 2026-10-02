@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api, { getAuthors, getBook, getBooks, getCategories, getReviews } from "../services/api";
 import { useCart } from "../contexts/CartContext";
@@ -24,9 +24,11 @@ export default function BookDetail() {
   const { toggleWishlist, isWishlist } = useWishlist();
   const { addViewed } = useRecentlyViewed();
   const navigate = useNavigate();
+  const dauTrangRef = useRef(null);
 
   useEffect(() => {
     setQty(1);
+    dauTrangRef.current?.scrollIntoView({ behavior: "smooth" });
     getBook(id).then((res) => {
       setBook(res.data);
       addViewed(res.data);
@@ -97,7 +99,14 @@ export default function BookDetail() {
   };
 
   if (!book) {
-    return <div className="container py-5 text-center">Đang tải...</div>;
+    return (
+      <div className="container py-5 text-center" ref={dauTrangRef}>
+        <div className="spinner-border text-danger" role="status">
+          <span className="visually-hidden">Đang tải...</span>
+        </div>
+        <p className="text-muted mt-3">Đang tải thông tin sách...</p>
+      </div>
+    );
   }
 
   const sachCungTacGia = allBooks.filter(
@@ -105,7 +114,7 @@ export default function BookDetail() {
   );
 
   return (
-    <div className="container py-5">
+    <div className="container py-5" ref={dauTrangRef}>
       <nav className="mb-3">
         <Link to="/books" className="text-muted">
           ← Về danh mục sách

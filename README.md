@@ -25,8 +25,9 @@ Truy cập http://localhost:5173 (hoặc đường dẫn Vite hiển thị).
 ## 2. Công nghệ sử dụng
 
 - React 19 + Vite
-- React Router (điều hướng SPA)
-- Context API (giỏ hàng, wishlist)
+- React Router (điều hướng SPA, route động và trang 404)
+- Context API (giỏ hàng, wishlist, lịch sử xem sách)
+- Hooks: useState, useEffect, useRef, useContext
 - Axios (gọi API)
 - JSON Server (dữ liệu giả, db.json)
 - Bootstrap 5 (giao diện responsive)
@@ -48,6 +49,10 @@ Khách / Khách hàng:
 - Đánh giá sao + nhận xét cho sách đã mua.
 - Giỏ hàng và đặt hàng, phí vận chuyển theo khu vực (Hà Nội / TP.HCM / tỉnh khác).
 - Danh sách yêu thích (wishlist).
+- Flash Sale: đồng hồ đếm ngược, giảm giá 30%.
+- Gợi ý cho bạn: tự động đề xuất sách dựa trên lịch sử xem (lưu ở trình duyệt).
+- Trang 404 khi truy cập sai đường dẫn.
+- Tìm kiếm nhanh bằng phím tắt `/`.
 
 Quản trị viên:
 
@@ -62,9 +67,9 @@ Quản trị viên:
 ```
 src/
 |-- admin/       (trang quản trị)
-|-- components/  (component dùng lại: BookCard, Rating, Pagination, Header, Footer)
-|-- contexts/    (Context API: giỏ hàng, wishlist)
-|-- pages/       (trang người dùng)
+|-- components/  (component dùng lại: BookCard, Rating, Pagination, Header, Footer, FlashSale, Recommend)
+|-- contexts/    (Context API: giỏ hàng, wishlist, lịch sử xem sách)
+|-- pages/       (trang người dùng: Home, Books, BookDetail, Cart, Checkout, NotFound)
 |-- services/    (gọi API bằng axios)
 |-- App.jsx      (định nghĩa route)
 |-- main.jsx     (khởi tạo ứng dụng)
